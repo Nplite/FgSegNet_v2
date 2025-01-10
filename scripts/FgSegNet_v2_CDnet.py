@@ -5,9 +5,9 @@ Created on Mon Jun 27 2018
 
 @author: longang
 """
-
-get_ipython().magic(u'load_ext autoreload')
-get_ipython().magic(u'autoreload 2')
+# from IPython import get_ipython
+# get_ipython().magic(u'load_ext autoreload')
+# get_ipython().magic(u'autoreload 2')
 
 import numpy as np
 import tensorflow as tf
@@ -38,6 +38,8 @@ from FgSegNet_v2_module import FgSegNet_v2_module
 from keras.utils.data_utils import get_file
 import gc
 
+
+
 # alert the user
 if keras.__version__!= '2.0.6' or tf.__version__!='1.1.0' or sys.version_info[0]<3:
     print('We implemented using [keras v2.0.6, tensorflow-gpu v1.1.0, python v3.6.3], other versions than these may cause errors somehow!\n')
@@ -46,7 +48,6 @@ if keras.__version__!= '2.0.6' or tf.__version__!='1.1.0' or sys.version_info[0]
 def getData(train_dir, dataset_dir):
     
     void_label = -1. # non-ROI
-    
     # given ground-truths, load inputs  
     Y_list = glob.glob(os.path.join(train_dir, '*.png'))
     X_list= glob.glob(os.path.join(dataset_dir, 'input','*.jpg'))
@@ -112,7 +113,7 @@ def getData(train_dir, dataset_dir):
         if(len(idx)>0):
             y = y[idx]
         lb = np.unique(y) #  0., 1
-        cls_weight = compute_class_weight('balanced', lb , y)
+        cls_weight = compute_class_weight(class_weight='balanced', classes=[0., 1.], y=y)
         class_0 = cls_weight[0]
         class_1 = cls_weight[1] if len(lb)>1 else 1.0
         
@@ -129,7 +130,7 @@ def train(data, scene, mdl_path, vgg_weights_path):
     ### hyper-params
     lr = 1e-4
     val_split = 0.2
-    max_epoch = 100
+    max_epoch = 2
     batch_size = 1
     ###
     
@@ -152,6 +153,7 @@ def train(data, scene, mdl_path, vgg_weights_path):
     
     model.save(mdl_path)
     del model, data, early, redu
+
 
 
 # =============================================================================
@@ -195,8 +197,13 @@ for category, scene_list in dataset.items():
     for scene in scene_list:
         print ('Training ->>> ' + category + ' / ' + scene)
         
-        train_dir = os.path.join('..', 'training_sets', 'CDnet2014_train', category, scene + str(num_frames))
-        dataset_dir = os.path.join('..', 'datasets', 'CDnet2014_dataset', category, scene)
+        train_dir = os.path.join( 'training_sets', 'CDnet2014_train', category, scene + str(num_frames))
+        dataset_dir = os.path.join( 'datasets', 'CDnet2014_dataset', category, scene)
+        print(f"Train Directory: {train_dir}")
+        print(f"Dataset Directory: {dataset_dir}")
+        print(f"Train Directory Exists: {os.path.exists(train_dir)}")
+        print(f"Dataset Directory Exists: {os.path.exists(dataset_dir)}")
+
         data = getData(train_dir, dataset_dir)
         
         mdl_path = os.path.join(mdl_dir, 'mdl_' + scene + '.h5')
